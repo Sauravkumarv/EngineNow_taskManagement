@@ -65,6 +65,61 @@ const createNewTaskController = async (req, res) => {
   }
 };
 
+
+
+const getTaskController=async(req,res)=>{
+  try {
+    
+    const tasks=await TASKS.find()
+
+    if(tasks===0){
+      return res.status(404).json({message:"No tasks available"})
+    }
+    return res.status(200).json({message:"Tasked Fetched Successfully",All_Tasks:tasks})
+  } catch (error) {
+    console.log("Error in getTaskController",error.message)
+    return res.status(500).json({message:"Error in getting tasks",error})
+  }
+}
+
+const getTaskByIdController=async(req,res)=>{
+  try {
+    const {id}=req.params; 
+
+    const gettaksbyId=await TASKS.findById(id);
+    if(!gettaksbyId){
+      return res.status(404).json({message:"No task availble"})
+    }
+        return res.status(200).json({message:"Tasked Fetched Successfully by ID",All_Tasks:gettaksbyId})
+
+  } catch (error) {
+    console.log("Error in getTaskByIdController",error.message)
+    return res.status(500).json({message:"Error in getting tasks",error})
+  }
+}
+
+const updateTaskController=async(req,res)=>{
+try {
+  const {id}=req.params;
+  const updateBody=req.body;
+  if(!id){
+    return res.status(404).json({message:"Task Id Undefined"})
+  };
+
+  const updateTask=await TASKS.findByIdAndUpdate(id,updateBody);
+
+  if(!updateTask){
+    return res.status(404).json({message:"Task Not found"})
+  }
+  return res.status(200).json({message:"Task Updated Successfully",updateTask})
+  
+} catch (error) {
+  console.log("Error in updateTaskController",error.message)
+    return res.status(500).json({message:"Error in getting tasks",error})
+}
+}
+
+
 module.exports = {
-  createNewTaskController,
-};
+  createNewTaskController,getTaskController,getTaskByIdController,updateTaskController
+  };
