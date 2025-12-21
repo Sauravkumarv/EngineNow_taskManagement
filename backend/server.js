@@ -2,13 +2,22 @@ const express= require("express")
 const dotenv=require('dotenv');
 const dbConnect = require("./config/db");
 const router = require("./routes/taskRouter");
-
+const cors=require("cors");
 dotenv.config();
 
 const app=express();
 dbConnect();
+const corsOrigin=process.env.FRONTEND_URL;
+
+
+app.use(cors({
+  origin:corsOrigin,
+  methods: ["GET", "POST", "PUT", "DELETE","PATCH"],
+}))
 
 app.use(express.urlencoded({extended:true}));
+app.use(express.json());
+
 
 app.use("/api/task",router);
 

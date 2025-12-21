@@ -67,20 +67,38 @@ const createNewTaskController = async (req, res) => {
 
 
 
-const getTaskController=async(req,res)=>{
+const getTaskController = async (req, res) => {
   try {
-    
-    const tasks=await TASKS.find()
+    const { status, sort } = req.query;
 
-    if(tasks===0){
-      return res.status(404).json({message:"No tasks available"})
+    let query = {};
+
+    if (status === "completed") query.completed = true;
+    if (status === "pending") query.completed = false;
+
+    let sortOption = {};
+    if (sort === "priority") sortOption.priority = 1;
+    if (sort === "dueDate") sortOption.dueDate = 1;
+
+    const tasks = await TASKS.find(query).sort(sortOption);
+
+    if (tasks.length === 0) {
+      return res.status(404).json({ message: "No tasks available" });
     }
-    return res.status(200).json({message:"Tasked Fetched Successfully",All_Tasks:tasks})
+
+    return res.status(200).json({
+      message: "Tasks fetched successfully",
+      tasks,
+    });
+
   } catch (error) {
-    console.log("Error in getTaskController",error.message)
-    return res.status(500).json({message:"Error in getting tasks",error})
+    return res.status(500).json({
+      message: "Error in getting tasks",
+      error: error.message,
+    });
   }
-}
+};
+
 
 const getTaskByIdController=async(req,res)=>{
   try {
@@ -119,7 +137,42 @@ try {
 }
 }
 
+const deleteTaskController=async(req,res)=>{
+  try {
+    const {id}=req.params;
+    const remove=await TASKS.findByIdAndDelete(id);
+    if(!remove){
+      return res.status(404).json({message:"Task Not found"})
+    }
+return res.status(200).json({message:"Task Deleted Successfully",remove})
+  
+  } catch (error) {
+    console.log("Error in deleteTaskController",error.message)
+    return res.status(500).json({message:"Error in deleteTaskController",error})
+  }
+}
+
+const toggleComplete = async (req, res) => {
+ try {
+  const task = await TASKS.findById(req.params.id);
+
+  if (!task) {
+    return res.status(404).json({ message: "Task not found" });
+  }
+
+  task.completed = !task.completed;
+  await task.save();
+
+  
+  return res.status(200).json({message:"Task status updated Successfully",task})
+ } catch (error) {
+    console.log("Error in toggleComplete",error.message)
+    return res.status(500).json({message:"Error in toggleComplete",error})
+ }
+};
+
+
 
 module.exports = {
-  createNewTaskController,getTaskController,getTaskByIdController,updateTaskController
+  createNewTaskController,getTaskController,getTaskByIdController,updateTaskController,deleteTaskController,toggleComplete
   };
