@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import axiosInstance from "../api/axios";
 
 import Header from "../components/Header";
@@ -8,7 +8,7 @@ import Modal from "../components/Modal";
 import AddTaskForm from "../components/AddTaskForm.jsx";
 
 const Home = () => {
-  // 🔹 STATE
+  //  STATE
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -19,56 +19,110 @@ const Home = () => {
   const [showModal, setShowModal] = useState(false);
   const [editTask, setEditTask] = useState(null);
 
-  // 🔹 FETCH TASKS
-  const fetchTasks = async () => {
+  //  FETCH TASKS WITH DEBOUNCE PROTECTION
+  const fetchTasks = useCallback(async () => {
     try {
       setLoading(true);
+      
+      // Add timeout to detect slow responses
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
       const res = await axiosInstance.get(
-        `/get?status=${statusFilter}&sort=${sortBy}`
+        `/get?status=${statusFilter}&sort=${sortBy}`,
+        { signal: controller.signal }
       );
+      
+      clearTimeout(timeoutId);
       setTasks(res.data.tasks || []);
     } catch (err) {
-      console.log("Error fetching tasks", err);
+      if (err.name === 'AbortError') {
+        console.error("Request timeout - server taking too long");
+      } else {
+        console.error("Error fetching tasks", err);
+      }
     } finally {
       setLoading(false);
     }
-  };
-
-  // 🔹 LOAD TASKS ON PAGE LOAD & FILTER CHANGE
-  useEffect(() => {
-    fetchTasks();
   }, [statusFilter, sortBy]);
 
-  // 🔹 FILTER TASKS BY SEARCH TERM
+  //  LOAD TASKS ON PAGE LOAD & FILTER CHANGE
+  useEffect(() => {
+    fetchTasks();
+  }, [fetchTasks]);
+
+  //  FILTER TASKS BY SEARCH TERM
   const filteredTasks = tasks.filter(task =>
     task.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // 🔹 ADD TASK
+  //  ADD TASK
   const handleAddTask = async (data) => {
-    await axiosInstance.post("/create", data);
-    setShowModal(false);
-    fetchTasks();
+    try {
+      const res = await axiosInstance.post("/create", data);
+      setShowModal(false);
+      
+      // Optimistic update instead of full fetch
+      if (res.data.task) {
+        setTasks(prev => [...prev, res.data.task]);
+      } else {
+        fetchTasks();
+      }
+    } catch (err) {
+      console.error("Error adding task", err);
+    }
   };
 
-  // 🔹 UPDATE TASK
+  //  UPDATE TASK
   const handleUpdateTask = async (data) => {
-    await axiosInstance.put(`/update/${editTask._id}`, data);
-    setEditTask(null);
-    setShowModal(false);
-    fetchTasks();
+    try {
+      const res = await axiosInstance.put(`/update/${editTask._id}`, data);
+      setEditTask(null);
+      setShowModal(false);
+      
+      // Optimistic update instead of full fetch
+      if (res.data.task) {
+        setTasks(prev => 
+          prev.map(task => task._id === editTask._id ? res.data.task : task)
+        );
+      } else {
+        fetchTasks();
+      }
+    } catch (err) {
+      console.error("Error updating task", err);
+    }
   };
 
-  // 🔹 TOGGLE COMPLETE
+  //  TOGGLE COMPLETE - OPTIMISTIC UPDATE
   const toggleComplete = async (id) => {
-    await axiosInstance.patch(`/toggle/${id}`);
-    fetchTasks();
+    // Optimistic update - immediately update UI
+    setTasks(prevTasks =>
+      prevTasks.map(task =>
+        task._id === id ? { ...task, completed: !task.completed } : task
+      )
+    );
+
+    try {
+      await axiosInstance.patch(`/toggle/${id}`);
+    } catch (err) {
+      console.error("Error toggling task", err);
+      // Revert on error
+      fetchTasks();
+    }
   };
 
-  // 🔹 DELETE TASK
+  //  DELETE TASK - OPTIMISTIC UPDATE
   const deleteTask = async (id) => {
-    await axiosInstance.delete(`/delete/${id}`);
-    fetchTasks();
+    // Optimistic update - immediately remove from UI
+    setTasks(prevTasks => prevTasks.filter(task => task._id !== id));
+
+    try {
+      await axiosInstance.delete(`/delete/${id}`);
+    } catch (err) {
+      console.error("Error deleting task", err);
+      // Revert on error
+      fetchTasks();
+    }
   };
 
   return (
@@ -82,30 +136,33 @@ const Home = () => {
           }}
         />
 
-        {/* FILTER BAR WITH SEARCH */}
-        <div className="mb-6 flex items-center gap-4">
-          <div className="flex-1">
-            <FilterBar
-              status={statusFilter}
-              setStatus={setStatusFilter}
-              sort={sortBy}
-              setSort={setSortBy}
-            />
-          </div>
+        {/* SEARCH BAR */}
+        <div className="mb-4">
           <input
             type="text"
             placeholder="Search tasks..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-64 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        {/* FILTER BAR */}
+        <div className="mb-6">
+          <FilterBar
+            status={statusFilter}
+            setStatus={setStatusFilter}
+            sort={sortBy}
+            setSort={setSortBy}
           />
         </div>
 
         {/* LOADING */}
         {loading && (
-          <p className="text-center text-gray-500 mt-10">
-            Loading tasks...
-          </p>
+          <div className="text-center mt-10">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <p className="text-gray-500 mt-2">Loading tasks...</p>
+          </div>
         )}
 
         {/* NO RESULTS MESSAGE */}
@@ -115,8 +172,15 @@ const Home = () => {
           </p>
         )}
 
+        {/* EMPTY STATE */}
+        {!loading && tasks.length === 0 && !searchTerm && (
+          <p className="text-center text-gray-500 mt-10">
+            No tasks yet. Click "Add Task" to create one!
+          </p>
+        )}
+
         {/* TASK LIST */}
-        {!loading && (
+        {!loading && filteredTasks.length > 0 && (
           <TaskList
             tasks={filteredTasks}
             onEdit={(task) => {
