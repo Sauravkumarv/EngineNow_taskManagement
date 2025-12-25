@@ -3,6 +3,7 @@ const dotenv=require('dotenv');
 const dbConnect = require("./config/db");
 const router = require("./routes/taskRouter");
 const cors=require("cors");
+const userRouter = require("./routes/userRouter");
 dotenv.config();
 
 const app=express();
@@ -18,7 +19,7 @@ app.use(cors({
 app.use(express.urlencoded({extended:true}));
 app.use(express.json());
 
-
+app.use("/auth",userRouter)
 app.use("/api/task",router);
 
 // app.use("/",(req,res)=>{
