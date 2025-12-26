@@ -1,6 +1,7 @@
-import { useEffect } from 'react';
-import { useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router';
+import axios from 'axios';
+import axiosInstance from '../../api/axios';
 
 const SignUp = () => {
   const [signupForm, setSignUpForm] = useState({
@@ -14,18 +15,18 @@ const SignUp = () => {
     email: "",
     password: "",
   });
-  const navigate=useNavigate();
+  
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
   const [isFlipped, setIsFlipped] = useState(false);
-  const [hasFlipped, setHasFlipped] = useState(false);
 
   // Flip animation on first load
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsFlipped(true);
-      setHasFlipped(true);
     }, 300);
     return () => clearTimeout(timer);
-  });
+  }, []);
 
   // Validation functions
   const validateEmail = (email) => {
@@ -108,17 +109,41 @@ const SignUp = () => {
 
     // Check if there are any errors
     if (newErrors.userName || newErrors.email || newErrors.password) {
-      return alert("Somethimg wrong",errors);
+      return;
     }
-navigate("/login")
-    setSignUpForm({
-  userName: "",
-  email: "",
-  password: "",
-});
 
-    console.log('Form submitted:', signupForm);
-    // Add your API call here
+    // API Call
+    try {
+      setLoading(true);
+      const response = await axiosInstance.post("/auth/signup",
+        signupForm
+      );  
+
+      if (response.data.success) {
+        alert("Account created successfully!");
+        
+        // Clear form
+        setSignUpForm({
+          userName: "",
+          email: "",
+          password: "",
+        });
+        
+        // Navigate to login
+        navigate("/login");
+      }
+    } catch (error) {
+      console.error("Signup error:", error);
+      
+      // Handle specific errors
+      if (error.response?.data?.message) {
+        alert(error.response.data.message);
+      } else {
+        alert("Failed to create account. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -146,7 +171,7 @@ navigate("/login")
             </div>
 
             {/* Form */}
-            <form onSubmit={handleSubmit}>
+            <form method='POST' onSubmit={handleSubmit}>
               <div className="space-y-4 sm:space-y-5">
                 {/* Username */}
                 <div>
@@ -161,11 +186,12 @@ navigate("/login")
                     onBlur={handleBlur}
                     name="userName"
                     value={signupForm.userName}
+                    disabled={loading}
                     className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border rounded-lg focus:outline-none focus:ring-2 transition-all ${
                       errors.userName 
                         ? 'border-red-500 focus:ring-red-500' 
                         : 'border-gray-300 focus:ring-blue-500 focus:border-transparent'
-                    }`}
+                    } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                   />
                   {errors.userName && (
                     <p className="text-red-500 text-xs mt-1">{errors.userName}</p>
@@ -185,11 +211,12 @@ navigate("/login")
                     onBlur={handleBlur}
                     name="email"
                     value={signupForm.email}
+                    disabled={loading}
                     className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border rounded-lg focus:outline-none focus:ring-2 transition-all ${
                       errors.email 
                         ? 'border-red-500 focus:ring-red-500' 
                         : 'border-gray-300 focus:ring-blue-500 focus:border-transparent'
-                    }`}
+                    } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                   />
                   {errors.email && (
                     <p className="text-red-500 text-xs mt-1">{errors.email}</p>
@@ -209,11 +236,12 @@ navigate("/login")
                     onBlur={handleBlur}
                     name="password"
                     value={signupForm.password}
+                    disabled={loading}
                     className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border rounded-lg focus:outline-none focus:ring-2 transition-all ${
                       errors.password 
                         ? 'border-red-500 focus:ring-red-500' 
                         : 'border-gray-300 focus:ring-blue-500 focus:border-transparent'
-                    }`}
+                    } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                   />
                   {errors.password && (
                     <p className="text-red-500 text-xs mt-1">{errors.password}</p>
@@ -222,10 +250,23 @@ navigate("/login")
 
                 {/* Submit Button */}
                 <button
-                  onClick={handleSubmit}
-                  className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-2.5 sm:py-3 text-sm sm:text-base rounded-lg font-semibold hover:from-blue-600 hover:to-purple-700 transform hover:scale-[1.02] transition-all duration-200 shadow-lg"
+                  type="submit"
+                  disabled={loading}
+                  className={`w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-2.5 sm:py-3 text-sm sm:text-base rounded-lg font-semibold hover:from-blue-600 hover:to-purple-700 transform hover:scale-[1.02] transition-all duration-200 shadow-lg ${
+                    loading ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
                 >
-                  Create Account
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Creating...
+                    </span>
+                  ) : (
+                    'Create Account'
+                  )}
                 </button>
               </div>
 

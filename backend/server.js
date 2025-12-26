@@ -19,7 +19,7 @@ app.use(cors({
 app.use(express.urlencoded({extended:true}));
 app.use(express.json());
 
-app.use("/auth",userRouter)
+app.use("/api/auth",userRouter)
 app.use("/api/task",router);
 
 // app.use("/",(req,res)=>{

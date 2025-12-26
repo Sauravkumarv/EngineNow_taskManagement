@@ -29,7 +29,7 @@ const Home = () => {
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
       
       const res = await axiosInstance.get(
-        `/get?status=${statusFilter}&sort=${sortBy}`,
+        `/task/get?status=${statusFilter}&sort=${sortBy}`,
         { signal: controller.signal }
       );
       
@@ -59,7 +59,7 @@ const Home = () => {
   //  ADD TASK
   const handleAddTask = async (data) => {
     try {
-      const res = await axiosInstance.post("/create", data);
+      const res = await axiosInstance.post("/task/create", data);
       setShowModal(false);
       
       // Optimistic update instead of full fetch
@@ -76,7 +76,7 @@ const Home = () => {
   //  UPDATE TASK
   const handleUpdateTask = async (data) => {
     try {
-      const res = await axiosInstance.put(`/update/${editTask._id}`, data);
+      const res = await axiosInstance.put(`/task/update/${editTask._id}`, data);
       setEditTask(null);
       setShowModal(false);
       
@@ -103,7 +103,7 @@ const Home = () => {
     );
 
     try {
-      await axiosInstance.patch(`/toggle/${id}`);
+      await axiosInstance.patch(`/task/toggle/${id}`);
     } catch (err) {
       console.error("Error toggling task", err);
       // Revert on error
@@ -117,7 +117,7 @@ const Home = () => {
     setTasks(prevTasks => prevTasks.filter(task => task._id !== id));
 
     try {
-      await axiosInstance.delete(`/delete/${id}`);
+      await axiosInstance.delete(`/task/delete/${id}`);
     } catch (err) {
       console.error("Error deleting task", err);
       // Revert on error
