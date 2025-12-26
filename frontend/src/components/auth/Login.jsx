@@ -82,7 +82,7 @@ const Login = () => {
       if (response.data.user) {
         // Store token in localStorage
         // localStorage.setItem('token', response.data.token);
-        // localStorage.setItem('user', JSON.stringify(response.data.user));
+        localStorage.setItem('user', JSON.stringify(response.data.user));
 
         alert("Login successful!");
 
