@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router';
-import axios from 'axios';
+import { Link, useNavigate } from 'react-router';
+
 import axiosInstance from '../../api/axios';
 
 const SignUp = () => {
@@ -274,12 +274,11 @@ const SignUp = () => {
               <div className="mt-5 sm:mt-6 text-center">
                 <p className="text-sm sm:text-base text-gray-600">
                   Already have an account?{' '}
-                  <a
-                    href="/login"
+                  <Link to={"/login"}
                     className="text-blue-600 font-semibold hover:text-blue-700 transition-colors"
                   >
                     Login
-                  </a>
+                  </Link>
                 </p>
               </div>
             </form>

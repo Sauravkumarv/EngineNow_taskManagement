@@ -89,11 +89,11 @@ const isEmail=identifier.includes('@');
 const user=await USER.findOne(isEmail?{email:identifier}:{userName:identifier});
 
 if(!user){
-  return res.json(401).json({message:"Invalid credemtials"})
+  return res.status(401).json({message:"Invalid credemtials"})
 }
 const isMatch =await user.comparePassword(password)
 if(!isMatch){
-  return res.json(401).json({message:"Invalid password"})
+  return res.status(401).json({message:"Invalid password"})
 }
 
 res.status(200).json({
