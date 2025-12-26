@@ -69,36 +69,36 @@ const Login = () => {
 
     setErrors(newErrors);
 
-    // Check if there are any errors
+   
     if (newErrors.identifier || newErrors.password) {
       return;
     }
 
-    // API Call
+    
     try {
       setLoading(true);
       const response = await axiosInstance.post("/auth/login", form);
 
-      if (response.data.success) {
+      if (response.data.user) {
         // Store token in localStorage
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
+        // localStorage.setItem('token', response.data.token);
+        // localStorage.setItem('user', JSON.stringify(response.data.user));
 
         alert("Login successful!");
 
-        // Clear form
+        
         setForm({
           identifier: "",
           password: "",
         });
 
-        // Navigate to home
+        
         navigate("/");
       }
     } catch (error) {
       console.error("Login error:", error);
 
-      // Handle specific errors
+      
       if (error.response?.data?.message) {
         alert(error.response.data.message);
       } else {

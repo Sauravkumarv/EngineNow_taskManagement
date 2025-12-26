@@ -37,7 +37,7 @@ const createNewUser = async (req, res) => {
       });
     }
 
-    // Check if user already exists - FIX: Use findOne instead of find
+    // Check if user already exists 
     const existUser = await USER.findOne({ email });
     if (existUser) {
       return res.status(409).json({ 
@@ -51,10 +51,10 @@ const createNewUser = async (req, res) => {
     const newUser = await USER.create({
       userName,
       email,
-      password, // Store hashed password
+      password, 
     });
 
-    // Remove password from response
+    
     const userResponse = {
       _id: newUser._id,
       userName: newUser.userName,
@@ -77,4 +77,37 @@ const createNewUser = async (req, res) => {
   }
 };
 
-module.exports = { createNewUser };
+const loginController=async(req,res)=>{
+  try {
+    const{identifier,password}=req.body;
+
+    if(!identifier || !password){
+      return res.status(400).json({message:"Username/Email and password are required"})
+    }
+const isEmail=identifier.includes('@');
+
+const user=await USER.findOne(isEmail?{email:identifier}:{userName:identifier});
+
+if(!user){
+  return res.json(401).json({message:"Invalid credemtials"})
+}
+const isMatch =await user.comparePassword(password)
+if(!isMatch){
+  return res.json(401).json({message:"Invalid password"})
+}
+
+res.status(200).json({
+      message: "Login successful",
+      user: {
+        id: user._id,
+        userName: user.userName,
+        email: user.email
+      }
+    });
+
+  } catch (error) {
+    
+  }
+}
+
+module.exports = { createNewUser,loginController };
