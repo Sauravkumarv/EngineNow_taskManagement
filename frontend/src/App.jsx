@@ -12,14 +12,20 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={
-         <ProtectedRoute><Home/></ProtectedRoute>
-          } />
-        <Route path="*" element={<NotFound />} />
-        
-        <Route path="/signup" element={<SignUp/>}/>
-        <Route path="/login" element={<Login/>}/>
-      </Routes>
+  <Route
+    path="/"
+    element={
+      <ProtectedRoute>
+        <Home />
+      </ProtectedRoute>
+    }
+  />
+
+  <Route path="/signup" element={<SignUp />} />
+  <Route path="/login" element={<Login />} />
+
+  <Route path="*" element={<NotFound />} />
+</Routes>
     </BrowserRouter>
   );
 }
