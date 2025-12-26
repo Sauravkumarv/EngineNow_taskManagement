@@ -2,8 +2,11 @@ import { BrowserRouter,Routes,Route } from "react-router";
 import Home from "../src/pages/Home"
 import NotFound from "../src/pages/NotFound";
 import SignUp from "./components/auth/SignUp";
+import Login from "./components/auth/Login";
 
 function App() {
+
+  
   return (
     <BrowserRouter>
       <Routes>
@@ -11,6 +14,7 @@ function App() {
         <Route path="*" element={<NotFound />} />
         
         <Route path="/signup" element={<SignUp/>}/>
+        <Route path="/login" element={<Login/>}/>
       </Routes>
     </BrowserRouter>
   );
